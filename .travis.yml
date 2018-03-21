@@ -2,6 +2,11 @@ language: node_js
 node_js: 8
 services:
   - docker
+cache:
+  directories:
+  - node_modules
+before_install:
+  - npm install aglio
 script:
   - npm run-script build
   - 'docker build -t ${TRAVIS_REPO_SLUG} . -f ./docker/Dockerfile'
@@ -12,3 +17,4 @@ install:
   - npm install
 after_success:
   - travis/publish.sh
+  - travis/deploy-gh-pages.sh
