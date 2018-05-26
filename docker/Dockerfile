@@ -1,13 +1,12 @@
-FROM node:8
+FROM node:8-alpine
 
-WORKDIR /opt/subscription-manager
-EXPOSE 80
+RUN mkdir -p /opt/data-broker
+WORKDIR /opt/data-broker
 CMD ["npm", "run", "subscription"]
 
-COPY package.json .
-COPY package-lock.json .
-RUN npm install
+COPY . /opt/data-broker
+RUN apk --no-cache add gcc g++ musl-dev make python
+RUN cd /opt/data-broker && npm install && npm run-script build
+RUN apk --no-cache del gcc g++ musl-dev make python
 
-COPY . .
-RUN npm run-script build
 
