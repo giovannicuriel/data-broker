@@ -1,13 +1,15 @@
-FROM node:8
+FROM node:8-alpine as basis
 
+# Installing build dependencies
+RUN apk --no-cache add gcc g++ musl-dev make python
+
+RUN mkdir -p /opt/data-broker
 WORKDIR /opt/data-broker
-EXPOSE 80
-CMD ["npm", "run", "subscription"]
-
-COPY package.json .
-COPY package-lock.json .
-RUN npm install
-
 COPY . .
-RUN npm run-script build
+RUN npm install && npm run-script build && npm prune --production
+
+FROM node:8-alpine
+WORKDIR /opt/data-broker
+COPY --from=basis /opt/data-broker /opt/data-broker
+CMD ["npm", "run", "subscription"]
 
