@@ -62,7 +62,7 @@ device id of the relevant device:
  *   token is the one-time access token retrieved by GET /socketio
  */
 var socket = socketio(target, {'query': "token=" + token, 'transports': ['websocket']});
-socket.on('abcd', (data) => {
+socket.on('{deviceidhere}', (data) => {
     // handle data here
 });
 ```
@@ -80,6 +80,9 @@ socket.on('all', (data) => {
     // handle data here
 });
 ```
+
+All messages received through ```device-data``` subject will be redirected to Socket-io.
+To check their format and content, check [iotagent-mosca documentation](http://dojotdocs.readthedocs.io/projects/iotagent-mosca/en/latest/operation.html#sending-messages-to-other-components-via-kafka).
 
 ### Request authentication token [GET]
 
