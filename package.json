@@ -21,6 +21,7 @@
   },
   "scripts": {
     "subscription": "node build/src/subscription-manager.js",
+    "notification": "node build/ngsi/Subscriber.js",
     "transpile": "tsc",
     "transpile-tests": "tsc -p ./tsconfig-dredd.json",
     "copy": "[ ! -d build/src/lua ] && mkdir -p build/src/lua ; cp -r src/lua/* build/src/lua",
