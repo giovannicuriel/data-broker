@@ -312,7 +312,14 @@ class SubscriptionEngine {
       logger.debug(`Action is ${util.inspect(notification, { depth: null})}:`);
       logger.debug(`Sending message to topic ${notification.topic}:`);
       logger.debug(`Message is: ${util.inspect(notification.data, {depth: null})}`);
-      this.producer.send(JSON.stringify(notification.data), notification.topic);
+      this.producer.createTopics([notification.topic], (err: any) => {
+        if (err !== null) {
+          logger.error(`Could not create topic ${notification.topic}`);
+          logger.error(`Error is ${err}`);
+        } else {
+          this.producer.send(JSON.stringify(notification.data), notification.topic);
+        }
+      });
     }
   }
 }
