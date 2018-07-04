@@ -87,6 +87,8 @@ function handleMessage(data: kafka.Message) {
 }
 
 const options = { kafkaHost: args.kafka, groupId: args.group};
+logger.debug("Initializing Kafka consumer...");
 const consumer = new kafka.ConsumerGroup(options, args.topic);
+logger.debug("... kafka consumer was initialized.");
 consumer.on("message", handleMessage);
 consumer.on("error", (err) => { logger.error("kafka consumer error", err); });

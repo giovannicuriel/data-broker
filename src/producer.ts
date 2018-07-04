@@ -1,4 +1,5 @@
 import kafka = require("kafka-node");
+import util = require("util");
 import config = require("./config");
 import { logger } from "./logger";
 
@@ -58,13 +59,13 @@ class KafkaProducer {
 
     logger.debug("Invoking message transmission...");
     this.producer.send([contextMessage], (err, result) => {
-      if (err !== undefined) {
+      if (err !== undefined && err !== null) {
         logger.debug(`Message transmission failed: ${err}`);
       } else {
         logger.debug("Message transmission succeeded.");
       }
       if (result !== undefined) {
-        logger.debug(`Result is: ${result}`);
+        logger.debug(`Result is: ${util.inspect(result, {depth: null})}`);
       }
     });
     logger.debug("... message transmission was requested.");
