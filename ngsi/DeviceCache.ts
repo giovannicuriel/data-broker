@@ -1,7 +1,7 @@
 /* jslint node: true */
 "use strict";
 
-import axios, {AxiosError, AxiosResponse} from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import util = require("util");
 import { logger } from "../src/logger";
 import * as device from "./deviceManager";
@@ -18,6 +18,10 @@ class DeviceCache {
   private deviceInfo: {[id: string]: device.IDevice};
   private deviceManager: string;
 
+  /**
+   * Constructor
+   * @param deviceManager DeviceManager host
+   */
   constructor(deviceManager: string) {
     this.deviceInfo = {};
     this.deviceManager = deviceManager;
@@ -36,6 +40,8 @@ class DeviceCache {
 
   private requestDeviceInfo(service: string, deviceId: string, cb: DeviceRequestCallback): void {
     logger.debug("Retrieving device info from DeviceManager...");
+    logger.debug(this.deviceManager);
+    logger.debug(`service: ${service}`);
     axios({
       headers: {authorization: "Bearer " + generateJWT(service)},
       method: "get",

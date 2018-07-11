@@ -1,8 +1,6 @@
 /* jslint node: true */
 "use strict";
 
-// import engine = require("./subscription-engine");
-
 import {SubscriptionEngine, SubscriptionType} from "./subscription-engine";
 
 import bodyParser = require("body-parser");
@@ -10,14 +8,17 @@ import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
+import uuid = require("uuid");
 import { authEnforce, authParse, IAuthRequest} from "./api/authMiddleware";
 import { logger } from "./logger";
 import {SocketIOSingleton} from "./socketIo";
+import { assertSubscription, ISubscription } from "./subscription/Types";
 import { TopicManagerBuilder } from "./TopicBuilder";
 
-// For now, express is not so well supported in TypeScript.
+// For now, http is not so well supported in TypeScript.
 // A quick workaround, which apparently does not have any side effects is to
 // set app with type "any".
+// Thus we can create a new http server using it.
 // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/21371#issuecomment-344958250
 const app: any = express();
 app.use(authParse);
@@ -36,17 +37,33 @@ SocketIOSingleton.getInstance(httpServer);
  * Subscription management endpoints
  */
 app.post("/subscription", (request: IAuthRequest, response: express.Response) => {
-  const subscription = request.body;
-  logger.debug("Received new subscription request.");
-  logger.debug(`Subscription body is: ${util.inspect(subscription, {depth: null})}`);
-  if ("id" in subscription.subject.entities) {
-    engine.addSubscription(SubscriptionType.id, subscription.subject.entities.id, subscription);
-  } else if ("model" in subscription.subject.entities) {
-    engine.addSubscription(SubscriptionType.model, subscription.subject.entities.model, subscription);
-  } else if ("type" in subscription.subject.entities) {
-    engine.addSubscription(SubscriptionType.type, subscription.subject.entities.type, subscription);
+  const subscription: ISubscription = request.body;
+  subscription.id = uuid.v4();
+  const service = request.service;
+  if (service === undefined) {
+    logger.error("Service is not defined in subscription request headers.");
+    response.status(401);
+    response.send({error: "missing mandatory authorization header in subscription creation request"});
+  } else {
+    logger.debug("Received new subscription request.");
+    logger.debug(`Subscription body is: ${util.inspect(subscription, {depth: null})}`);
+
+    const [ret, msg] = assertSubscription(subscription);
+    if (ret !== 0) {
+      logger.debug(`Request is not valid: ${msg}`);
+      response.status(400);
+      response.send(`invalid request: ${msg}`);
+    } else {
+      if (subscription.subject.entities.id !== undefined) {
+        engine.addSubscription(SubscriptionType.id, service, subscription.subject.entities.id, subscription);
+      } else if (subscription.subject.entities.template !== undefined) {
+        engine.addSubscription(SubscriptionType.template, service,
+          subscription.subject.entities.template, subscription);
+      }
+      response.status(200);
+      response.send("Ok!");
+    }
   }
-  response.send("Ok!");
 });
 
 /*

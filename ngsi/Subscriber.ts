@@ -1,11 +1,11 @@
-/* jslint node: true */
 "use strict";
 
 import {ArgumentParser} from "argparse";
-import axios from "axios";
+import axios, {AxiosError} from "axios";
 import kafka = require("kafka-node");
 import uuid = require("uuid/v4");
 import { logger } from "../src/logger";
+import { Event } from "../src/subscription/Event";
 import { DeviceCache } from "./DeviceCache";
 import * as device from "./deviceManager";
 import { TranslatorV1 } from "./TranslatorV1";
@@ -14,7 +14,7 @@ import { TranslatorV2 } from "./TranslatorV2";
 const parser = new ArgumentParser();
 parser.addArgument(["-t", "--topic"]);
 parser.addArgument(["-k", "--kafka"]);
-parser.addArgument(["-o", "--target"]);
+// parser.addArgument(["-o", "--target"]);
 parser.addArgument(["--deviceManager"], {defaultValue: "http://device-manager:5000"});
 parser.addArgument(["--group"], {defaultValue: uuid()});
 parser.addArgument(["--version"], {defaultValue: "v1"});
@@ -33,44 +33,62 @@ interface ITranslator {
   translate(deviceData: any, deviceInfo: device.IDevice, topic: string): any;
 }
 
-let translator: ITranslator;
+let translator: ITranslator | null;
 if (args.version === "v1") {
   translator = new TranslatorV1();
 } else if (args.version === "v2") {
   translator = new TranslatorV2();
+} else if (args.version === "plain") {
+  translator = null;
 } else {
   logger.error("Unknown version " + args.version + " requested.");
   process.exit(1);
 }
 
 function handleMessage(data: kafka.Message) {
-
-  const event = JSON.parse(data.value);
+  logger.debug("Handling new message...");
+  const event: Event = JSON.parse(data.value);
   const meta = event.metadata;
-  cache.getDeviceInfo(meta.service, meta.deviceid, (err: any, deviceInfo: device.IDevice | undefined) => {
+  const receiver: string = event.metadata.notif_receiver;
+
+  logger.debug(`Message is: ${event}.`);
+  logger.debug(`Notification receiver is ${receiver}`);
+
+  cache.getDeviceInfo(meta.tenant, meta.deviceid, (err: any, deviceInfo: device.IDevice | undefined) => {
     if (err || (deviceInfo === undefined)) {
       logger.error("Failed to process received event", err);
       return;
     }
 
-    const translated = translator.translate(event.attrs, deviceInfo, data.topic);
-    if (translated == null) {
-      logger.error("Failed to parse event", event);
+    let translated: any;
+    if (translator !== null) {
+      translated = translator.translate(event.attrs, deviceInfo, data.topic);
+      if (translated == null) {
+        logger.error("Failed to parse event", event);
+      }
+    } else {
+      translated = event.attrs;
     }
 
+    logger.debug(`Sending POST to ${receiver}`);
     axios({
       data: translated,
       headers: {"content-type": "application/json"},
       method: "post",
-      url: args.target,
+      url: receiver,
     })
     .then(() => { logger.debug("event sent"); })
-    .catch(() => { logger.debug("failed to send request"); });
+    .catch((error: AxiosError) => {
+      logger.debug("... event was not sent.");
+      logger.error(`Error is: ${error}`);
+    });
   });
 
 }
 
 const options = { kafkaHost: args.kafka, groupId: args.group};
+logger.debug("Initializing Kafka consumer...");
 const consumer = new kafka.ConsumerGroup(options, args.topic);
+logger.debug("... kafka consumer was initialized.");
 consumer.on("message", handleMessage);
 consumer.on("error", (err) => { logger.error("kafka consumer error", err); });
