@@ -1,3 +1,3 @@
 #!/bin/sh
 
-dredd
+./node_modules/.bin/dredd
