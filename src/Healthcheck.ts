@@ -93,7 +93,6 @@ class AgentHealthChecker {
       status: "pass",
     };
 
-
     const collectCpu = (trigger: DataTrigger) => {
       const ncpu = os.cpus().length;
       const lcpu = os.loadavg()[1]; // last five minute

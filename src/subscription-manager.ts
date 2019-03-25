@@ -75,7 +75,6 @@ class DataBroker {
     return messenger;
   }
 
-
   protected registerTopicEndpoints() {
     /*
      * Subscription management endpoints
@@ -193,7 +192,7 @@ class DataBroker {
 
 function main() {
   const app = express();
-  const subscrEngine = new SubscriptionEngine()
+  const subscrEngine = new SubscriptionEngine();
   const dataBroker = new DataBroker(app, subscrEngine);
   dataBroker.start();
 }

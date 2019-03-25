@@ -33,8 +33,7 @@ const healthcheck = {
     memory: Number(process.env.HC_MEMORY_USAGE_TIMEOUT) || 300000,
     mongodb: Number(process.env.HC_MONGODB_TIMEOUT) || 30000,
     uptime: Number(process.env.HC_UPTIME_TIMEOUT) || 300000,
-  }
+  },
 };
-
 
 export { kafka, broker, cache, healthcheck};
