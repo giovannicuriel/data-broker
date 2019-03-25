@@ -23,6 +23,7 @@ const mockTestConfig = {
     ioServerOnFn: jest.fn(),
     ioServerUseFn: jest.fn(),
     messengerInitFn: jest.fn(),
+    messengerMock: {},
     messengerOnFn: jest.fn(),
     messengerUnregisterFn: jest.fn(),
     redisRunScriptFn: jest.fn(),
@@ -67,6 +68,7 @@ beforeAll(() => {
             unregisterCallback: mockTestConfig.messengerUnregisterFn,
         };
     });
+    mockTestConfig.messengerMock = mockMessenger();
 
     const mockFilter: any = FilterManager;
     mockFilter.mockImplementation(() => {
@@ -127,7 +129,7 @@ describe("SocketIOHandler", () => {
         });
         process.kill = MockKill;
         const httpServerMock = jest.fn();
-        const obj = new SocketIOHandler(httpServerMock);
+        const obj = new SocketIOHandler(httpServerMock, mockTestConfig.messengerMock as any);
         obj.processNewSocketIo = jest.fn();
         expect(obj).not.toBe(undefined);
         expect(mockTestConfig.ioServerUseFn).toBeCalled();
@@ -150,7 +152,7 @@ describe("SocketIOHandler", () => {
     });
 
     it("should process a new regular socket.io connection", () => {
-        const obj = new SocketIOHandler(jest.fn());
+        const obj = new SocketIOHandler(jest.fn(), mockTestConfig.messengerMock as any);
         obj.registerSocketIoNotification = jest.fn();
         mockTestConfig.socketSample.handshake.query.subject = "sample-subject";
         obj.processNewSocketIo(mockTestConfig.socketSample as any, "sample-tenant");
@@ -159,7 +161,7 @@ describe("SocketIOHandler", () => {
     });
 
     it("should process a new notification socket.io connection", () => {
-        const obj = new SocketIOHandler(jest.fn());
+        const obj = new SocketIOHandler(jest.fn(), mockTestConfig.messengerMock as any);
         obj.registerSocketIoNotification = jest.fn();
         mockTestConfig.socketSample.handshake.query.subject = "dojot.notifications";
         obj.processNewSocketIo(mockTestConfig.socketSample as any, "sample-tenant");
@@ -168,11 +170,11 @@ describe("SocketIOHandler", () => {
     });
 
     it("should register a new notification socket.io connection", () => {
-        const obj = new SocketIOHandler(jest.fn());
+        const obj = new SocketIOHandler(jest.fn(), mockTestConfig.messengerMock as any);
         mockTestConfig.filterCheckFilterFn.mockReturnValue(true);
         obj.registerSocketIoNotification(mockTestConfig.socketSample as any, "sample-tenant");
         expect(mockTestConfig.messengerOnFn).toHaveBeenCalled();
-        const [subject, event, onCbk] = mockTestConfig.messengerOnFn.mock.calls[0];
+        const [subject, event, onCbk] = mockTestConfig.messengerOnFn.mock.calls[1];
         expect(subject).toEqual("dojot.notifications");
         expect(event).toEqual("message");
         onCbk("sample-tenant", "sample-msg");
@@ -214,7 +216,7 @@ describe("SocketIOHandler", () => {
     });
 
     it("should get a token", (done) => {
-        const obj = new SocketIOHandler({});
+        const obj = new SocketIOHandler({}, mockTestConfig.messengerMock as any);
         const token = obj.getToken("sample-tenant");
 
         expect(token).toEqual("sample-uuid");
