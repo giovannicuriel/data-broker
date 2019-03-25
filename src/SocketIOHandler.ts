@@ -26,7 +26,7 @@ class SocketIOHandler {
    * Constructor.
    * @param httpServer HTTP server as a basis to offer SocketIO connection
    */
-  constructor(httpServer: any) {
+  constructor(httpServer: any, messenger: Messenger) {
     logger.debug("Creating new SocketIO handler...", TAG);
 
     logger.debug("Creating sio server...", TAG);
@@ -37,13 +37,8 @@ class SocketIOHandler {
 
     logger.debug("Registering SocketIO server callbacks...", TAG);
 
-    this.messenger = new Messenger("data-broker-socketio");
-    this.messenger.init().then(() => {
-      this.messenger.on("device-data", "message", this.handleMessage.bind(this));
-    }).catch((error: any) => {
-      logger.error(`Failed to initialize kafka-messenger (${error})`, {filename: "SocketIOHandler"});
-      process.kill(process.pid, "SIGTERM");
-    });
+    this.messenger = messenger;
+    this.messenger.on("device-data", "message", this.handleMessage.bind(this));
 
     this.fManager = new FilterManager();
 

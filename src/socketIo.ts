@@ -1,22 +1,22 @@
 /* jslint node: true */
 "use strict";
 
-import {SocketIOHandler } from "./SocketIOHandler";
+import { Messenger } from "@dojot/dojot-module";
+import { SocketIOHandler } from "./SocketIOHandler";
 
 class SocketIOSingletonImpl {
   private handler: SocketIOHandler | null;
-
   constructor() {
     this.handler = null;
   }
 
-  public getInstance(httpServer?: any) {
+  public getInstance(httpServer?: any, messenger?: Messenger) {
     if (this.handler != null) {
       return this.handler;
     }
 
-    if (httpServer) {
-      this.handler = new SocketIOHandler(httpServer);
+    if (httpServer && messenger) {
+      this.handler = new SocketIOHandler(httpServer, messenger);
       return this.handler;
     }
 

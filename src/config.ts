@@ -26,4 +26,15 @@ const cache = {
   user: process.env.DATABROKER_CACHE_USER || "redis",
 };
 
-export { kafka, broker, cache };
+const healthcheck = {
+  timeout: {
+    cpu: Number(process.env.HC_CPU_USAGE_TIMEOUT) || 300000,
+    kafka: Number(process.env.HC_KAFKA_TIMEOUT) || 30000,
+    memory: Number(process.env.HC_MEMORY_USAGE_TIMEOUT) || 300000,
+    mongodb: Number(process.env.HC_MONGODB_TIMEOUT) || 30000,
+    uptime: Number(process.env.HC_UPTIME_TIMEOUT) || 300000,
+  }
+};
+
+
+export { kafka, broker, cache, healthcheck};
