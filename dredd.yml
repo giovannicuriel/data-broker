@@ -4,7 +4,7 @@ hookfiles: ./tests/build/tests/dredd-hooks/*hook.js
 language: nodejs
 sandbox: false
 server: npm run subscription
-server-wait: 3
+server-wait: 10
 custom: {}
 names: false
 only: []
