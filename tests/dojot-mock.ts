@@ -1,14 +1,7 @@
 import { logger } from "@dojot/dojot-module-logger";
 import express from "express";
-import { v4 as uuidv4 } from "uuid";
 
 const TAG = { filename: "dojot-mock "};
-
-const messages = {
-  serviceStatus: {},
-  subjectA: {},
-  subjectB: {},
-};
 
 const APP_PORT = 5002;
 
