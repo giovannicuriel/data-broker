@@ -3,22 +3,25 @@ HOST: http://localhost:80
 
 # Dojot data broker API
 
-This document describes the APIs using data-broker as a standalone process. If used within
-dojot, the endpoints might be changed a bit. Check [dojot's documentation](http://dojotdocs.readthedocs.io/)
-to check all of them.
+This document describes the APIs using data-broker as a standalone process. If
+used within dojot, the endpoints might be changed a bit. Check [dojot's
+documentation](http://dojotdocs.readthedocs.io/) to check all of them.
 
 # Group Subject
 
-In order to allow clients to consume dojot events on their own pace, dojot exposes (both internally
-and externally) apache kafka streams. To manage the set of topics/partitions exposed by the kafka
-cluster, the data-broker component functions as a gatekeeper to the queues, configuring the needed
+In order to allow clients to consume dojot events on their own pace, dojot
+exposes (both internally and externally) apache kafka streams. To manage the
+set of topics/partitions exposed by the kafka cluster, the data-broker
+component functions as a gatekeeper to the queues, configuring the needed
 streams on kafka and setting its accessibility parameters.
 
-In order to *subscribe* to a given set of events, a client uses a `subject`. A `subject` is a shared
-human-readable identifier for the data stream one wishes to produce or consume from. From the
-data-broker point of view, all `subjects` are equal and are just a representation of a set of events
-to be put on their own stream. To check the list of available subjects to consume from (as an
-application) please check the relevant service documentation (e.g. *device-manager* or *iotagent*).
+In order to *subscribe* to a given set of events, a client uses a `subject`. A
+`subject` is a shared human-readable identifier for the data stream one wishes
+to produce or consume from. From the data-broker point of view, all `subjects`
+are equal and are just a representation of a set of events to be put on their
+own stream. To check the list of available subjects to consume from (as an
+application) please check the relevant service documentation (e.g.
+*device-manager* or *iotagent*).
 
 ## Subject Profiles [/topic/{subjectid}/profile]
 
@@ -78,6 +81,12 @@ Default values are one partition per topic, no replication.
 
 
 ### Retrieve subject profile [GET]
+
+Retrieve currently configured topic profile for a particular subject. Should
+any internal error occurs, a 500 status code is returned with a proper error
+description. These errors could be related to REDIS access or some other
+service dependency.
+
 + Request
     + Headers
 
@@ -98,6 +107,22 @@ Default values are one partition per topic, no replication.
                 }
             }
 
++ Response 401 (application/json; charset=utf-8)
+
+            {"error": "Missing mandatory authorization header in profile request"}
+
++ Response 404 (application/json; charset=utf-8)
+
+            {"message": "Could not find profiles for this subject"}
+
++ Response 500 (application/json; charset=utf-8)
+
+            {
+                "message": "error",
+                "details": "internal error"
+            }
+
+
 ### Create a new subject profile [POST]
 + Request
     + Headers
@@ -106,25 +131,30 @@ Default values are one partition per topic, no replication.
 
     + Body
 
-            { 
+            {
                 "special-user":
-                 { 
-                     "replica_assignment": 
-                     { 
-                         "1": [ 1, 2, 3], 
-                         "2": [ 4, 5, 6] 
-                         } 
-                }, 
-                "*": 
-                { 
+                 {
+                     "replica_assignment":
+                     {
+                         "1": [ 1, 2, 3],
+                         "2": [ 4, 5, 6]
+                         }
+                },
+                "*":
+                {
                     "num_partitions": 2,
                      "replication_factor" : 1
-                }  
+                }
             }
 
 + Response 200 (application/json; charset=utf-8)
 
             {"message": "Set configs successfully"}
+
++ Response 401 (application/json; charset=utf-8)
+
+            {"error": "Missing mandatory authorization header in profile request"}
+
 
 ### Edit Profile [/topic/{subjectid}/profile/{tenant}]
 
@@ -141,21 +171,24 @@ Default values are one partition per topic, no replication.
 
     + Body
 
-            { 
+            {
                 "special-user":
-                 { 
-                     "replica_assignment": 
-                     { 
-                         "1": [ 1, 2, 3], 
+                 {
+                     "replica_assignment":
+                     {
+                         "1": [ 1, 2, 3],
                          "2": [ 4, 5, 6],
-                         "3": [ 7, 8, 9] 
-                         } 
-                }  
+                         "3": [ 7, 8, 9]
+                         }
+                }
             }
 + Response 200 (application/json; charset=utf-8)
 
-            {"message": "PUT request successful"}
+            {"message": "Configs edited/created successfully"}
 
++ Response 401 (application/json; charset=utf-8)
+
+            {"error": "Missing mandatory authorization header in profile request"}
 
 
 
@@ -176,6 +209,15 @@ Request a kafka topic ID for realtime event consumption
 + Response 200 (application/json; charset=utf-8)
 
             {"topic":"c9b2c688-9e40-4032-877a-3d262acba9d0"}
+
++ Response 401 (application/json; charset=utf-8)
+
+            {"error": "missing mandatory authorization header in get request"}
+
++ Response 500 (application/json; charset=utf-8)
+
+            {"error": "failed to process topic"}
+
 
 # Group Websockets
 
@@ -220,8 +262,20 @@ socket.on('all', (data) => {
 });
 ```
 
-All messages received through ```device-data``` subject will be redirected to Socket-io.
-To check their format and content, check [iotagent-mosca documentation](http://dojotdocs.readthedocs.io/projects/iotagent-mosca/en/latest/operation.html#sending-messages-to-other-components-via-kafka).
+All messages received through ```device-data``` and ```dojot.notification```
+subjects will be redirected to Socket-io. To check their format and content,
+check [iotagent-mosca documentation](http://dojotdocs.readthedocs.io/projects/iotagent-mosca/en/latest/operation.html#sending-messages-to-other-components-via-kafka).
+
+In order to receive data selectively, the following events can be subscribed:
+
+- ```all```: all device events from a particular tenant
+- `device-id`: only events for that particular device.
+- ```notifications```: only notifications are going to be sent. You can sent
+  back to data-broker filters. In order to receive notifications using a socket
+  io connection, a ```subject=dojot.notifications``` parameter should be added to the query string
+  used to create the socket.io connection.
+
+
 
 ### Request authentication token [GET]
 
@@ -236,6 +290,10 @@ Request a one-time token for connection establishment.
 
             {"token":"f3fa3200-355e-4c64-b300-64cef69b0576"}
 
++ Response 401 (application/json; charset=utf-8)
+
+            {"error": "missing mandatory authorization header in socketio request"}
+
 
 # Group Log configuration
 
@@ -243,7 +301,7 @@ Retrieve/request log level changes
 
 ## Log level configuration [log/config]
 
-### Retrieve current log level [GET] 
+### Retrieve current log level [GET]
 
 + Request
   + Headers
@@ -263,7 +321,7 @@ Retrieve/request log level changes
 
     + Body
 
-            { 
+            {
                 "level": "warn"
             }
 + Response 200 (text/html; charset=utf-8)
