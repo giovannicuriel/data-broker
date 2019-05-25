@@ -41,10 +41,12 @@ class TopicManager {
     });
   }
   public getConfigTopics(subject: string): Promise<any> {
+    this.assertTopic(subject, "a valid subject must be provided");
     return this.redis.getConfig(subject);
   }
 
   public setConfigTopics(subject: string, body: any) {
+    this.assertTopic(subject, "a valid subject must be provided");
     try {
       const configs: any = body;
       let ten: any;
