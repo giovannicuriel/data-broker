@@ -1,15 +1,26 @@
 /* jslint node: true */
 "use strict";
 
+import { logger } from "@dojot/dojot-module-logger";
 import redis = require("redis");
+import util = require("util");
 import config = require("./config");
 import { ClientWrapper } from "./RedisClientWrapper";
+
+const TAG = { filename: "redis-mgr" };
 
 class RedisManager {
   private redis: redis.RedisClient;
 
   constructor() {
-    this.redis = redis.createClient({host: config.cache.redis});
+    logger.debug(`Redis configuration is:`, TAG);
+    logger.debug(`${util.inspect(config.cache, { depth: null })}`, TAG);
+    const cacheUser = config.cache.user;
+    const cachePwd = config.cache.pwd;
+    const cacheHost = `${config.cache.address}:${config.cache.port}`;
+    const cacheDatabase = config.cache.database;
+    const url = `redis://${cacheUser}:${cachePwd}@${cacheHost}/${cacheDatabase}`;
+    this.redis = redis.createClient({ url });
   }
 
   /**
@@ -22,4 +33,4 @@ class RedisManager {
 }
 
 const redisSingleton = new RedisManager();
-export {redisSingleton as RedisManager};
+export { redisSingleton as RedisManager };

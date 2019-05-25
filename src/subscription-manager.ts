@@ -9,7 +9,8 @@ import express = require("express");
 import http = require("http");
 import morgan = require("morgan");
 import util = require("util");
-import { authEnforce, authParse, IAuthRequest } from "./api/authMiddleware";
+import { authEnforce, authParse, IAuthRequest} from "./api/authMiddleware";
+import * as config from "./config";
 import { ITopicProfile } from "./RedisClientWrapper";
 import { SocketIOSingleton } from "./socketIo";
 import { SubscriptionEngine, SubscriptionType } from "./subscription-engine";
@@ -150,6 +151,6 @@ app.get("/socketio", (req: IAuthRequest, response: express.Response) => {
   }
 });
 
-httpServer.listen(80, () => {
-  logger.debug("Subscription manager listening on port 80", TAG);
+httpServer.listen(config.broker.port, () => {
+  logger.debug("Subscription manager listening on port " + config.broker.port, TAG);
 });
